@@ -6,7 +6,8 @@ import os
 
 replicate.api_token = os.getenv('REPLICATE_API_TOKEN')
 
-genai.configure(api_key="")
+genai.configure(api_key=os.getenv(''))
+
 PINK = '\033[95m'
 CYAN = '\033[96m'
 YELLOW = '\033[93m'
