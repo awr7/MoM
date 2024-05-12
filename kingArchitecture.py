@@ -2,6 +2,9 @@ import anthropic
 import google.generativeai as genai
 import replicate
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 replicate.api_token = os.getenv('REPLICATE_API_TOKEN')
