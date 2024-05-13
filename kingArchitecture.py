@@ -29,15 +29,17 @@ def claude():
     client = anthropic.Anthropic(api_key=anthropicKey)
     message = client.messages.create(
         model="claude-3-opus-20240229",
-        max_tokens=1000,
+        max_tokens=4096,
         temperature=0.0,
-        system="Respond only in Yoda-speak.",
+        system="Simulate three brilliant, logical experts collaboratively achieving a goal. Each one verbosely explains their thought process in real-time, considering the prior explanations of others and openly acknowledging mistakes. At each step, whenever possible, each expert refines and builds upon the thoughts of others, acknowledging their contributions. They continue until there is a definitive answer to the goal. For clarity, your entire response should be in a markdown table.",
         messages=[
-            {"role": "user", "content": "How are you today?"}
+            {"role": "user", "content": "The goal is to create The MoM project seeks to harness the collective intelligence of multiple large language models (LLMs) to enhance decision-making and problem-solving capabilities in complex scenarios. The integration of diverse AI model outputs could significantly improve the accuracy and depth of responses, presenting an opportunity to innovate in AI-driven decision frameworks."}
         ]
     )
 
     print(message.content)
+
+claude()
 
 # Run gemini() to start a conversation with the Gemini model
 def gemini():
