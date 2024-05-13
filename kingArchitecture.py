@@ -2,6 +2,7 @@ import anthropic
 import google.generativeai as genai
 import replicate
 import os
+from tqdm import tqdm
 from dotenv import load_dotenv
 
 # Load the environment variables
@@ -25,38 +26,38 @@ def open_file(filepath):
         return infile.read()
 
 # Run claude() to start a conversation with the Claude model
-def claude():
+def claude(prompt, systemMessage=""):
     client = anthropic.Anthropic(api_key=anthropicKey)
     message = client.messages.create(
         model="claude-3-opus-20240229",
         max_tokens=4096,
         temperature=0.0,
-        system="Simulate three brilliant, logical experts collaboratively achieving a goal. Each one verbosely explains their thought process in real-time, considering the prior explanations of others and openly acknowledging mistakes. At each step, whenever possible, each expert refines and builds upon the thoughts of others, acknowledging their contributions. They continue until there is a definitive answer to the goal. For clarity, your entire response should be in a markdown table.",
+        system=systemMessage,
         messages=[
-            {"role": "user", "content": "The goal is to create The MoM project seeks to harness the collective intelligence of multiple large language models (LLMs) to enhance decision-making and problem-solving capabilities in complex scenarios. The integration of diverse AI model outputs could significantly improve the accuracy and depth of responses, presenting an opportunity to innovate in AI-driven decision frameworks."}
+            {"role": "user", "content": prompt}
         ]
     )
 
-    print(message.content)
+    return message.content
 
-claude()
 
 # Run gemini() to start a conversation with the Gemini model
-def gemini():
+def gemini(prompt):
     model = genai.GenerativeModel(model_name="gemini-1.0-pro")
 
     convo = model.start_chat(history=[])
 
-    convo.send_message("Hello, how are you today?")
-    print(PINK, convo.last.text, RESET_COLOR)
+    convo.send_message(prompt)
+    return convo.last.text
 
 # Run llama3() to start a conversation with the Llama model
-def llama3():
+def llama3(prompt):
+    results = []
     for event in replicate.stream(
         "meta/meta-llama-3-70b-instruct",
         input={
             "top_p": 0.9,
-            "prompt": "Work through this problem step by step:\n\nQ: Sarah has 7 llamas. Her friend gives her 3 more trucks of llamas. Each truck has 5 llamas. How many llamas does Sarah have in total?",
+            "prompt": prompt,
             "max_tokens": 512,
             "min_tokens": 0,
             "temperature": 0.6,
@@ -65,15 +66,17 @@ def llama3():
             "frequency_penalty": 0.2,
         },
     ):
-        print(str(event), end="")
+        results.append(str(event))
+    return results
         
 # Run mistralai() to start a conversation with the Mistral model       
-def mistralai():
+def mistralai(prompt):
+    results = []
     for event in replicate.stream(
         "mistralai/mistral-7b-instruct-v0.2",
         input={
             "top_p": 0.9,
-            "prompt": "Give me 5 restaurants in Montclair area in New jersey for mothers day",
+            "prompt": prompt,
             "max_tokens": 512,
             "min_tokens": 0,
             "temperature": 0.6,
@@ -82,4 +85,44 @@ def mistralai():
             "frequency_penalty": 0.2,
         },
     ):
-        print(str(event), end="")
+        results.append(str(event))
+    return results
+
+def theKing(prompt):
+    system_message = """You are a wise and knowledgeable coder and problem solver king who provides thoughtful answers to questions.
+    You have 3 advisors, who offer their insights to assist you.
+
+    Consider their perspectives and advice, but ultimatly provide your own well-reasoned response to the problem based on all context
+    and advice. If you find their input helpful, feel free to acknowledge their contributions in your answer."""
+
+    models = {
+        "llama3": llama3,
+        "mistralai": mistralai,
+        "gemini": gemini
+    }
+
+    answers = {}
+    tasks = [f"Consulting {name}" for name in models.keys()]
+    progress_bar = tqdm(tasks, desc="Gathering insights", unit="task")
+
+    for model_name, model_func in models.items():
+        progress_bar.set_description(f"Consulting {model_name}")
+        answers[model_name] = model_func(prompt)
+        progress_bar.update()
+
+    peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
+    king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
+    king_answer = claude(king_prompt, system_message)
+    progress_bar.update()
+
+    progress_bar.close()
+    return king_answer
+
+def main():
+    user_prompt = input("Please enter your prompt: ")
+    final_answer = theKing(user_prompt)
+    print("\nThe King's answer:\n")
+    print(final_answer)
+
+if __name__ == "__main__":
+    main()
