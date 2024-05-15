@@ -4,6 +4,7 @@ import replicate
 import os
 from tqdm import tqdm
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Load the environment variables
 load_dotenv()
@@ -12,6 +13,22 @@ load_dotenv()
 replicate.api_token = os.getenv('REPLICATE_API_TOKEN')
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 anthropicKey = os.getenv('CLAUDE_API_KEY')
+OpenAI.api_key = os.getenv('OPENAI_API_KEY')
+
+def gpt4o(prompt, systemMessage):
+
+    client = OpenAI()
+
+    #OpenAI
+    completion = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "system", "content": systemMessage },
+        {"role": "user", "content": prompt}
+    ]
+    )
+
+    return completion.choices[0].message
 
 
 # Terminal Colors
@@ -98,7 +115,8 @@ def theKing(prompt):
     models = {
         "llama3": llama3,
         "mistralai": mistralai,
-        "gemini": gemini
+        "gemini": gemini,
+        "claude": claude
     }
 
     answers = {}
@@ -112,7 +130,7 @@ def theKing(prompt):
 
     peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
     king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
-    king_answer = claude(king_prompt, system_message)
+    king_answer = gpt4o(king_prompt, system_message)
     progress_bar.update()
 
     progress_bar.close()
