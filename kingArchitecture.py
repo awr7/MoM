@@ -16,34 +16,28 @@ genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 anthropicKey = os.getenv('CLAUDE_API_KEY')
 OpenAI.api_key = os.getenv('OPENAI_API_KEY')
 
-def gpt4o(prompt, systemMessage):
-
-    client = OpenAI()
-
-    #OpenAI
-    completion = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {"role": "system", "content": systemMessage },
-        {"role": "user", "content": prompt}
-    ]
-    )
-
-    return completion.choices[0].message
-
-
 # Terminal Colors
 PINK = '\033[95m'
 CYAN = '\033[96m'
 YELLOW = '\033[93m'
 NEON_GREEN = '\033[92m'
 RESET_COLOR = '\033[0m'
+RED = '\033[91m'
+GOLD = '\033[38;2;255;215;0m'
 
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8') as infile:
-        return infile.read()
+def gpt4o(prompt, systemMessage):
+    client = OpenAI()
 
-# Run claude() to start a conversation with the Claude model
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": systemMessage},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return completion.choices[0].message.content
+
 def claude(prompt, systemMessage=""):
     client = anthropic.Anthropic(api_key=anthropicKey)
     message = client.messages.create(
@@ -58,17 +52,12 @@ def claude(prompt, systemMessage=""):
 
     return message.content
 
-
-# Run gemini() to start a conversation with the Gemini model
 def gemini(prompt):
     model = genai.GenerativeModel(model_name="gemini-1.0-pro")
-
     convo = model.start_chat(history=[])
-
     convo.send_message(prompt)
     return convo.last.text
 
-# Run llama3() to start a conversation with the Llama model
 def llama3(prompt):
     results = []
     for event in replicate.stream(
@@ -79,15 +68,14 @@ def llama3(prompt):
             "max_tokens": 512,
             "min_tokens": 0,
             "temperature": 0.6,
-            "prompt_template": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            "prompt_template": "system\n\nYou are a helpful assistant\nuser\n\n{prompt}\nassistant\n\n",
             "presence_penalty": 1.15,
             "frequency_penalty": 0.2,
         },
     ):
         results.append(str(event))
-    return results
-        
-# Run mistralai() to start a conversation with the Mistral model       
+    return " ".join(results)
+
 def mistralai(prompt):
     results = []
     for event in replicate.stream(
@@ -98,19 +86,19 @@ def mistralai(prompt):
             "max_tokens": 512,
             "min_tokens": 0,
             "temperature": 0.6,
-            "prompt_template": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            "prompt_template": "system\n\nYou are a helpful assistant\nuser\n\n{prompt}\nassistant\n\n",
             "presence_penalty": 1.15,
             "frequency_penalty": 0.2,
         },
     ):
         results.append(str(event))
-    return results
+    return " ".join(results)
 
 def theKing(prompt):
     system_message = """You are a wise and knowledgeable coder and problem solver king who provides thoughtful answers to questions.
     You have 3 advisors, who offer their insights to assist you.
 
-    Consider their perspectives and advice, but ultimatly provide your own well-reasoned response to the problem based on all context
+    Consider their perspectives and advice, but ultimately provide your own well-reasoned response to the problem based on all context
     and advice. If you find their input helpful, feel free to acknowledge their contributions in your answer."""
 
     models = {
@@ -121,6 +109,14 @@ def theKing(prompt):
     }
 
     answers = {}
+    color_mapping = {
+        'llama3': PINK,
+        'mistralai': CYAN,
+        'gemini': YELLOW,
+        'claude': NEON_GREEN,
+        'gpt4o': GOLD
+    }
+
     with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
@@ -128,8 +124,11 @@ def theKing(prompt):
                 model_name = futures_to_model[future]
                 try:
                     answers[model_name] = future.result()
+                    color = color_mapping.get(model_name, RESET_COLOR)
+                    print(f"\n{color}{model_name}'s advice:{RESET_COLOR}\n{answers[model_name]}\n")
                 except Exception as exc:
                     answers[model_name] = f"{model_name} generated an exception: {exc}"
+                    print(f"{RED}{model_name} generated an exception: {exc}{RESET_COLOR}")
                 progress_bar.update()
 
     peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
@@ -142,7 +141,7 @@ def main():
     user_prompt = input("Please enter your prompt: ")
     final_answer = theKing(user_prompt)
     print("\nThe King's answer:\n")
-    print(final_answer)
+    print(f"{GOLD}{final_answer}{RESET_COLOR}")
 
 if __name__ == "__main__":
     main()
