@@ -5,6 +5,7 @@ import os
 from tqdm import tqdm
 from dotenv import load_dotenv
 from openai import OpenAI
+import concurrent.futures
 
 # Load the environment variables
 load_dotenv()
@@ -120,20 +121,21 @@ def theKing(prompt):
     }
 
     answers = {}
-    tasks = [f"Consulting {name}" for name in models.keys()]
-    progress_bar = tqdm(tasks, desc="Gathering insights", unit="task")
-
-    for model_name, model_func in models.items():
-        progress_bar.set_description(f"Consulting {model_name}")
-        answers[model_name] = model_func(prompt)
-        progress_bar.update()
+    with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
+            for future in concurrent.futures.as_completed(futures_to_model):
+                model_name = futures_to_model[future]
+                try:
+                    answers[model_name] = future.result()
+                except Exception as exc:
+                    answers[model_name] = f"{model_name} generated an exception: {exc}"
+                progress_bar.update()
 
     peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
     king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
     king_answer = gpt4o(king_prompt, system_message)
-    progress_bar.update()
 
-    progress_bar.close()
     return king_answer
 
 def main():
