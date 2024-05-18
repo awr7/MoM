@@ -1,7 +1,5 @@
 # MoM
 
-## What is the primary aim of the project involving multiple large language models (LLMs)?
-
 Harness the collective intelligence of multiple large language models (LLMs) to enhance decision-making and problem-solving capabilities in complex scenarios. 
 
 ## What do we hope to achieve with the integration of diverse AI model outputs?
