@@ -137,10 +137,12 @@ def theKing(prompt):
     return king_answer
 
 def main():
-    user_prompt = input("Please enter your prompt: ")
-    final_answer = theKing(user_prompt)
-    print("\nThe King's answer:\n")
-    print(final_answer)
+    while (True):
+        user_prompt = input("Please enter your prompt: ")
+        final_answer = theKing(user_prompt)
+        print("\nThe King's answer:\n")
+        print(final_answer)
+    
 
 if __name__ == "__main__":
     main()
