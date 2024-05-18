@@ -35,3 +35,42 @@ graph TD;
 | OpenAI API | API for accessing OpenAI's GPT models. |
 | Replicate API | API for accessing various AI models and tools. |
 | Python-dotenv | Read key-value pairs from a .env file and set them as environment variables. |
+
+
+## King Data Flow
+
+```mermaid
+graph LR;
+    A[User Input] --> B[Backend API]
+    B --> C[Task Distribution]
+    C --> D[Peasant AIs]
+    D --> E[Meta LLaMA]
+    D --> F[Google Gemini]
+    D --> G[Mistral AI]
+    D --> H[Anthropic Claude]
+    E --> I[Responses]
+    F --> I
+    G --> I
+    H --> I
+    I --> J[King AI Evaluation]
+    J --> K[Final Answer]
+    K --> L[User Output]
+
+```
+
+## Duopoly Data Flow
+
+```mermaid
+graph LR
+    
+    B(User Input) --> C[GPT 4o]
+    B --> D[Claude Opus]
+    C --> E[Advisor Models Provide Insights]
+    D --> E
+    E --> F[Primary Models Discuss Findings]
+    F --> G[Resolve Conflicts]
+    G --> H[Reach Consensus]
+    H --> I[Provide Final Answer]
+    I --> J[End]
+
+```
