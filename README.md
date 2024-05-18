@@ -12,26 +12,24 @@ Harness the collective intelligence of multiple large language models (LLMs) to 
 
 ## Technology Stack
 
-``` mermaid
+```mermaid
 graph TD;
-    A[Backend] --> B[Python]
-    B --> C[FastAPI]
+    B[Python]
     B --> D[AI Models]
-    D --> E[Anthropic Claude]
+    D --> E[Claude Opus ]
     D --> F[Google Gemini]
-    D --> G[Meta LLaMA]
-    D --> H[Mistral AI]
-    B --> I[APIs]
-    I --> J[OpenAI API]
-    I --> K[Replicate API]
+    D --> K[Replicate API]
+    K --> G[Meta LLaMA]
+    K --> H[Mistral AI]
+    D --> J[GPT 4o]
     B --> L[Environment Management]
     L --> M[Python-dotenv]
 
 ```
+
 | Technology | Description |
 | --- | --- |
 | Python | Programming language used for backend and AI integration. |
-| FastAPI | Web framework for building APIs with Python. |
 | Anthropic Claude | One of the LLMs used for generating insights. |
 | Google Gemini | Another LLM used for generating insights. |
 | Meta LLaMA | An LLM used for generating insights. |
@@ -39,4 +37,3 @@ graph TD;
 | OpenAI API | API for accessing OpenAI's GPT models. |
 | Replicate API | API for accessing various AI models and tools. |
 | Python-dotenv | Read key-value pairs from a .env file and set them as environment variables. |
-
