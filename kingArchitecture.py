@@ -138,7 +138,13 @@ def theKing(prompt):
     return king_answer
 
 def main():
-    user_prompt = input("Please enter your prompt: ")
+    user_prompt = ""
+    print("Please enter your prompt (type 'END' on a new line to finish):")
+    while True:
+        line = input()
+        if line == "END":
+            break
+        user_prompt += line + "\n"
     final_answer = theKing(user_prompt)
     print("\nThe King's answer:\n")
     print(f"{GOLD}{final_answer}{RESET_COLOR}")
