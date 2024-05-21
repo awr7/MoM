@@ -6,6 +6,8 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 from openai import OpenAI
 import concurrent.futures
+import webbrowser
+import tempfile
 
 # Load the environment variables
 load_dotenv()
@@ -94,6 +96,61 @@ def mistralai(prompt):
         results.append(str(event))
     return " ".join(results)
 
+def generate_html_response(full_response):
+    """Generates an HTML file to display the response in a web browser."""
+    html_content = f'''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Interactive AI Response</title>
+        <style>
+            body {{
+                font-family: 'Arial', sans-serif;
+                background-color: #f4f4f4;
+                margin: 40px;
+                color: #333;
+            }}
+            .container {{
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }}
+            pre {{
+                background-color: #282a36;
+                color: #f8f8f2;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+                padding: 10px;
+                font-family: 'Consolas', 'Courier New', Courier, monospace;
+                overflow: auto;
+                white-space: pre-wrap;
+            }}
+            h1 {{
+                color: #2c3e50;
+            }}
+            p, ol {{
+                line-height: 1.6;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Response from AI Advisors</h1>
+            <p>This section contains dynamically generated responses from various AI models processed by the <code>the_king</code> function.</p>
+            <pre>{full_response}</pre>
+        </div>
+    </body>
+    </html>
+    '''
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.html') as temp_file:
+        temp_file.write(html_content)
+        webbrowser.open('file://' + temp_file.name)
+
 def theKing(prompt):
     system_message = """You are a wise and knowledgeable coder and problem solver king who provides thoughtful answers to questions.
     You have 3 advisors, who offer their insights to assist you.
@@ -148,6 +205,7 @@ def main():
     final_answer = theKing(user_prompt)
     print("\nThe King's answer:\n")
     print(f"{GOLD}{final_answer}{RESET_COLOR}")
+    generate_html_response(final_answer)
 
 if __name__ == "__main__":
     main()
