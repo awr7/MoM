@@ -50,7 +50,7 @@ def claude(prompt, systemMessage=""):
         ]
     )
 
-    return message.content
+    return message.content[0].text
 
 def gemini(prompt):
     model = genai.GenerativeModel(model_name="gemini-1.0-pro")
