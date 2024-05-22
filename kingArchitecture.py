@@ -6,8 +6,7 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 from openai import OpenAI
 import concurrent.futures
-import webbrowser
-import tempfile
+import streamlit as st
 
 # Load the environment variables
 load_dotenv()
@@ -16,7 +15,7 @@ load_dotenv()
 replicate.api_token = os.getenv('REPLICATE_API_TOKEN')
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 anthropicKey = os.getenv('CLAUDE_API_KEY')
-OpenAI.api_key = os.getenv('OPENAI_API_KEY')
+openai_api_key = os.getenv('OPENAI_API_KEY')
 
 # Terminal Colors
 PINK = '\033[95m'
@@ -27,9 +26,9 @@ RESET_COLOR = '\033[0m'
 RED = '\033[91m'
 GOLD = '\033[38;2;255;215;0m'
 
-def gpt4o(prompt, systemMessage):
-    client = OpenAI()
-
+def gpt4o(prompt, systemMessage, openai_api_key):
+    """Queries the GPT-4o model with the given prompt and system message."""
+    client = OpenAI(api_key=openai_api_key)
     completion = client.chat.completions.create(
         model="gpt-4o",
         messages=[
@@ -37,10 +36,10 @@ def gpt4o(prompt, systemMessage):
             {"role": "user", "content": prompt}
         ]
     )
-
     return completion.choices[0].message.content
 
 def claude(prompt, systemMessage=""):
+    """Queries the Claude model with the given prompt and optional system message."""
     client = anthropic.Anthropic(api_key=anthropicKey)
     message = client.messages.create(
         model="claude-3-opus-20240229",
@@ -51,16 +50,17 @@ def claude(prompt, systemMessage=""):
             {"role": "user", "content": prompt}
         ]
     )
-
     return message.content[0].text
 
 def gemini(prompt):
+    """Queries the Gemini model with the given prompt."""
     model = genai.GenerativeModel(model_name="gemini-1.0-pro")
     convo = model.start_chat(history=[])
     convo.send_message(prompt)
     return convo.last.text
 
 def llama3(prompt):
+    """Queries the Llama3 model with the given prompt and returns the result."""
     results = []
     for event in replicate.stream(
         "meta/meta-llama-3-70b-instruct",
@@ -79,6 +79,7 @@ def llama3(prompt):
     return " ".join(results)
 
 def mistralai(prompt):
+    """Queries the MistralAI model with the given prompt and returns the result."""
     results = []
     for event in replicate.stream(
         "mistralai/mistral-7b-instruct-v0.2",
@@ -96,62 +97,8 @@ def mistralai(prompt):
         results.append(str(event))
     return " ".join(results)
 
-def generate_html_response(full_response):
-    """Generates an HTML file to display the response in a web browser."""
-    html_content = f'''
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Interactive AI Response</title>
-        <style>
-            body {{
-                font-family: 'Arial', sans-serif;
-                background-color: #f4f4f4;
-                margin: 40px;
-                color: #333;
-            }}
-            .container {{
-                background-color: white;
-                border: 1px solid #ccc;
-                border-radius: 8px;
-                padding: 20px;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }}
-            pre {{
-                background-color: #282a36;
-                color: #f8f8f2;
-                border-radius: 5px;
-                border: 1px solid #ccc;
-                padding: 10px;
-                font-family: 'Consolas', 'Courier New', Courier, monospace;
-                overflow: auto;
-                white-space: pre-wrap;
-            }}
-            h1 {{
-                color: #2c3e50;
-            }}
-            p, ol {{
-                line-height: 1.6;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Response from AI Advisors</h1>
-            <p>This section contains dynamically generated responses from various AI models processed by the <code>the_king</code> function.</p>
-            <pre>{full_response}</pre>
-        </div>
-    </body>
-    </html>
-    '''
-
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.html') as temp_file:
-        temp_file.write(html_content)
-        webbrowser.open('file://' + temp_file.name)
-
-def theKing(prompt):
+def theKing(prompt, openai_api_key):
+    """Orchestrates querying multiple models and synthesizes their responses into a final answer."""
     system_message = """You are a wise and knowledgeable coder and problem solver king who provides thoughtful answers to questions.
     You have 3 advisors, who offer their insights to assist you.
 
@@ -159,19 +106,19 @@ def theKing(prompt):
     and advice. If you find their input helpful, feel free to acknowledge their contributions in your answer."""
 
     models = {
-        "llama3": llama3,
-        "mistralai": mistralai,
-        "gemini": gemini,
-        "claude": claude
+        "Llama3": llama3,
+        "MistralAI": mistralai,
+        "Gemini": gemini,
+        "Claude": claude
     }
 
     answers = {}
     color_mapping = {
-        'llama3': PINK,
-        'mistralai': CYAN,
-        'gemini': YELLOW,
-        'claude': NEON_GREEN,
-        'gpt4o': GOLD
+        'Llama3': PINK,
+        'MistralAI': CYAN,
+        'Gemini': YELLOW,
+        'Claude': NEON_GREEN,
+        'GPT4o': GOLD
     }
 
     with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
@@ -190,22 +137,30 @@ def theKing(prompt):
 
     peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
     king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
-    king_answer = gpt4o(king_prompt, system_message)
+    king_answer = gpt4o(king_prompt, system_message, openai_api_key)
 
-    return king_answer
+    return answers, king_answer
 
-def main():
-    user_prompt = ""
-    print("Please enter your prompt (type 'END' on a new line to finish):")
-    while True:
-        line = input()
-        if line == "END":
-            break
-        user_prompt += line + "\n"
-    final_answer = theKing(user_prompt)
-    print("\nThe King's answer:\n")
-    print(f"{GOLD}{final_answer}{RESET_COLOR}")
-    generate_html_response(final_answer)
+# Streamlit UI
+st.title("💬 King Architecture")
+st.caption("🚀 A Streamlit chatbot powered by multiple AI models")
 
-if __name__ == "__main__":
-    main()
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"]).write(msg["content"])
+
+if prompt := st.chat_input("Enter your prompt:"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+
+    with st.spinner("The King is gathering advice from advisors..."):
+        model_answers, king_answer = theKing(prompt, openai_api_key)
+
+    for model_name, answer in model_answers.items():
+        st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice: {answer}"})
+        st.chat_message("assistant").write(f"{model_name}'s advice: {answer}")
+
+    st.session_state.messages.append({"role": "assistant", "content": f"The King's answer: {king_answer}"})
+    st.chat_message("assistant").write(f"The King's answer: {king_answer}")
