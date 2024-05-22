@@ -121,23 +121,30 @@ def theKing(prompt, openai_api_key):
         'GPT4o': GOLD
     }
 
-    with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
-            for future in concurrent.futures.as_completed(futures_to_model):
-                model_name = futures_to_model[future]
-                try:
-                    answers[model_name] = future.result()
-                    color = color_mapping.get(model_name, RESET_COLOR)
-                    print(f"\n{color}{model_name}'s advice:{RESET_COLOR}\n{answers[model_name]}\n")
-                except Exception as exc:
-                    answers[model_name] = f"{model_name} generated an exception: {exc}"
-                    print(f"{RED}{model_name} generated an exception: {exc}{RESET_COLOR}")
-                progress_bar.update()
+    with st.spinner("The King is gathering advice from advisors..."):
+        with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
+                for future in concurrent.futures.as_completed(futures_to_model):
+                    model_name = futures_to_model[future]
+                    try:
+                        answer = future.result()
+                        answers[model_name] = answer
+                        st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice:\n{answer}"})
+                        st.chat_message("assistant").write(f"**{model_name}'s advice:**\n\n{answer}")
+                        color = color_mapping.get(model_name, RESET_COLOR)
+                        print(f"\n{color}{model_name}'s advice:{RESET_COLOR}\n{answer}\n")
+                    except Exception as exc:
+                        error_message = f"{model_name} generated an exception: {exc}"
+                        answers[model_name] = error_message
+                        st.session_state.messages.append({"role": "assistant", "content": error_message})
+                        st.chat_message("assistant").write(f"**{model_name} Error:**\n\n{error_message}")
+                    progress_bar.update()
 
-    peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
-    king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
-    king_answer = gpt4o(king_prompt, system_message, openai_api_key)
+    with st.spinner("The King is crafting his response..."):
+        peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
+        king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given Problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
+        king_answer = gpt4o(king_prompt, system_message, openai_api_key)
 
     return answers, king_answer
 
@@ -155,12 +162,7 @@ if prompt := st.chat_input("Enter your prompt:"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    with st.spinner("The King is gathering advice from advisors..."):
-        model_answers, king_answer = theKing(prompt, openai_api_key)
-
-    for model_name, answer in model_answers.items():
-        st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice: {answer}"})
-        st.chat_message("assistant").write(f"{model_name}'s advice: {answer}")
+    model_answers, king_answer = theKing(prompt, openai_api_key)
 
     st.session_state.messages.append({"role": "assistant", "content": f"The King's answer: {king_answer}"})
-    st.chat_message("assistant").write(f"The King's answer: {king_answer}")
+    st.chat_message("assistant").write(f"**The King's answer:**\n\n{king_answer}")
