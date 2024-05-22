@@ -50,7 +50,7 @@ def claude(prompt, systemMessage=""):
             {"role": "user", "content": prompt}
         ]
     )
-    return message.content
+    return message.content[0].text
 
 def gemini(prompt):
     """Queries the Gemini model with the given prompt."""
@@ -142,7 +142,7 @@ def theKing(prompt, openai_api_key):
     return answers, king_answer
 
 # Streamlit UI
-st.title("💬 AI Advisor Chatbot")
+st.title("💬 King Architecture")
 st.caption("🚀 A Streamlit chatbot powered by multiple AI models")
 
 if "messages" not in st.session_state:
