@@ -114,11 +114,10 @@ def theKing(prompt, openai_api_key):
 
     answers = {}
     color_mapping = {
-        'Llama3': PINK,
-        'MistralAI': CYAN,
-        'Gemini': YELLOW,
-        'Claude': NEON_GREEN,
-        'GPT4o': GOLD
+        'Llama3': ':blue[Llama3]',
+        'MistralAI': ':red[MistralAI]',
+        'Gemini': ':violet[Gemini]',
+        'Claude': ':green[Claude]'
     }
 
     with st.spinner("The King is gathering advice from advisors..."):
@@ -129,16 +128,17 @@ def theKing(prompt, openai_api_key):
                     model_name = futures_to_model[future]
                     try:
                         answer = future.result()
-                        answers[model_name] = answer
-                        st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice:\n{answer}"})
-                        st.chat_message("assistant").write(f"**{model_name}'s advice:**\n\n{answer}")
-                        color = color_mapping.get(model_name, RESET_COLOR)
-                        print(f"\n{color}{model_name}'s advice:{RESET_COLOR}\n{answer}\n")
+                        header = f"**{model_name}'s advice:**" 
+                        colored_header = header.replace(model_name, color_mapping.get(model_name, model_name))  # Apply color to header only
+                        content_text = f"{colored_header}\n\n{answer}"
+                        st.session_state.messages.append({"role": "assistant", "content": content_text})
+                        st.chat_message("assistant").write(content_text)
                     except Exception as exc:
                         error_message = f"{model_name} generated an exception: {exc}"
                         answers[model_name] = error_message
-                        st.session_state.messages.append({"role": "assistant", "content": error_message})
-                        st.chat_message("assistant").write(f"**{model_name} Error:**\n\n{error_message}")
+                        error_content_text = f"**{model_name} Error:**\n\n{error_message}"
+                        st.session_state.messages.append({"role": "assistant", "content": error_content_text})
+                        st.chat_message("assistant").write(error_content_text)
                     progress_bar.update()
 
     with st.spinner("The King is crafting his response..."):
@@ -164,5 +164,6 @@ if prompt := st.chat_input("Enter your prompt:"):
 
     model_answers, king_answer = theKing(prompt, openai_api_key)
 
-    st.session_state.messages.append({"role": "assistant", "content": f"The King's answer: {king_answer}"})
-    st.chat_message("assistant").write(f"**The King's answer:**\n\n{king_answer}")
+    king_content_text = f"**:orange[The King's answer:]**\n\n{king_answer}"
+    st.session_state.messages.append({"role": "assistant", "content": king_content_text})
+    st.chat_message("assistant").write(king_content_text)
