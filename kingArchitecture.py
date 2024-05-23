@@ -178,7 +178,7 @@ model_avatars = {
     "Claude": "🧠",
     "assistant": ":material/smart_toy:",
     "user": ":material/person:",
-    "King": "👑"  # Add the King emoji
+    "King": "👑" 
 }
 
 default_avatar = ":material/person:"
