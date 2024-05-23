@@ -97,20 +97,54 @@ def the_king(prompt, openai_api_key):
     }
 
     answers = {}
-    with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
-            for future in concurrent.futures.as_completed(futures_to_model):
-                model_name = futures_to_model[future]
-                try:
-                    answers[model_name] = future.result()
-                except Exception as exc:
-                    answers[model_name] = f"{model_name} generated an exception: {exc}"
-                progress_bar.update()
+    color_mapping = {
+        'Llama3': ':blue[Llama3]',
+        'MistralAI': ':red[MistralAI]',
+        'Gemini': ':violet[Gemini]',
+        'Claude': ':green[Claude]'
+    }
 
-    peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
-    king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
-    king_answer = gpt4o(king_prompt, system_message, openai_api_key)
+    model_avatars = {
+        "Llama3": "🦙",
+        "MistralAI": "🌬️",
+        "Gemini": "♊",
+        "Claude": "🧠",
+        "assistant": ":material/smart_toy:",
+        "user": ":material/person:",
+        "King": "👑"
+    }
+
+    default_avatar = ":material/person:"
+
+    answers = {}
+    with st.spinner("The King is gathering advice from advisors..."):
+        with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
+                for future in concurrent.futures.as_completed(futures_to_model):
+                    model_name = futures_to_model[future]
+                    try:
+                        answer = future.result()
+                        header = f"**{model_name}'s advice:**"
+                        colored_header = header.replace(model_name, color_mapping.get(model_name, model_name))  # Apply color to header only
+                        content_text = f"{colored_header}\n\n{answer}"
+                        st.session_state.messages.append({"role": "assistant", "content": content_text})
+                        st.chat_message("assistant", avatar=model_avatars.get(model_name, default_avatar)).write(content_text)
+                    except Exception as exc:
+                        error_message = f"{model_name} generated an exception: {exc}"
+                        error_content_text = f"**{model_name} Error:**\n\n{error_message}"
+                        st.session_state.messages.append({"role": "assistant", "content": error_content_text})
+                        st.chat_message("assistant", avatar=model_avatars.get(model_name, default_avatar)).write(error_content_text)
+                    progress_bar.update()
+
+    with st.spinner("The King is crafting his response..."):
+        peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
+        king_prompt = f"{peasant_answers}\n\nProblem: {prompt}\n\nUse the insights from the advisors to create a step-by-step plan to solve the given problem, then solve the problem your way. Also, include footnotes to the best advisor contributions."
+        king_answer = gpt4o(king_prompt, system_message, openai_api_key)
+
+        king_content_text = f"**:orange[The King's answer:]**\n\n{king_answer}"
+        st.session_state.messages.append({"role": "assistant", "content": king_content_text})
+        st.chat_message("assistant", avatar=model_avatars["King"]).write(king_content_text)
 
     return answers, king_answer
 
@@ -129,36 +163,69 @@ def duopoly(prompt, openai_api_key):
         "Claude": claude
     }
 
+    color_mapping = {
+        'Llama3': ':blue[Llama3]',
+        'MistralAI': ':red[MistralAI]',
+        'Gemini': ':violet[Gemini]',
+        'Claude': ':green[Claude]'
+    }
+
+    model_avatars = {
+        "Llama3": "🦙",
+        "MistralAI": "🌬️",
+        "Gemini": "♊",
+        "Claude": "🧠",
+        "assistant": ":material/smart_toy:",
+        "user": ":material/person:",
+        "King": "👑"
+    }
+
+
     answers = {}
-    with tqdm(total=len(models), desc="Gathering insights from advisors", unit="task") as progress_bar:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
-            for future in concurrent.futures.as_completed(futures_to_model):
-                model_name = futures_to_model[future]
-                try:
-                    answers[model_name] = future.result()
-                except Exception as exc:
-                    answers[model_name] = f"{model_name} generated an exception: {exc}"
-                progress_bar.update()
+    with st.spinner("Gathering insights from advisors..."):
+        with tqdm(total=len(models), desc="Gathering insights", unit="task") as progress_bar:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures_to_model = {executor.submit(model_func, prompt): model_name for model_name, model_func in models.items()}
+                for future in concurrent.futures.as_completed(futures_to_model):
+                    model_name = futures_to_model[future]
+                    try:
+                        answer = future.result()
+                        header = f"**{model_name}'s advice:**" 
+                        colored_header = header.replace(model_name, color_mapping.get(model_name, model_name))
+                        content_text = f"{colored_header}\n\n{answer}"
+                        st.session_state.messages.append({"role": "assistant", "content": content_text})
+                        st.chat_message("assistant", avatar=model_avatars.get(model_name, ":material/person:")).write(content_text)
+                    except Exception as exc:
+                        error_message = f"{model_name} generated an exception: {exc}"
+                        error_content_text = f"**{model_name} Error:**\n\n{error_message}"
+                        st.session_state.messages.append({"role": "assistant", "content": error_content_text})
+                        st.chat_message("assistant", avatar=model_avatars.get(model_name, ":material/person:")).write(error_content_text)
+                    progress_bar.update()
 
-    peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
-    oracle_prompt = f"{peasant_answers}\n\nHello Oracle OpenAI, this is Oracle Claude3. Let's discuss and find a solution to the problem while challenging and taking the advisors' insights into consideration. Solve the problem: {prompt}"
+    with st.spinner("The King's are crafting their response..."):
+        peasant_answers = "\n\n".join(f"{name}'s advice: {advice}" for name, advice in answers.items())
+        oracle_prompt = f"{peasant_answers}\n\nHello Oracle OpenAI, this is Oracle Claude3. Let's discuss and find a solution to the problem while challenging and taking the advisors' insights into consideration. Solve the problem: {prompt}"
 
-    conversation_history.append(oracle_prompt)
+        conversation_history.append(oracle_prompt)
 
-    # Simulate conversation between OpenAI and Claude
-    for i in range(1):
-        current_context = "\n".join(conversation_history)
-        if i % 2 == 0:
-            claude_message = claude(current_context, system_message_c3)
-            conversation_history.append(f"Oracle Claude3 said: {claude_message}\n")
-        else:
-            openai_message = gpt4o(current_context, system_message_oi, openai_api_key)
-            conversation_history.append(f"Oracle OpenAI responded: {openai_message}\n")
+        # Simulate conversation between OpenAI and Claude
+        for i in range(1):
+            current_context = "\n".join(conversation_history)
+            if i % 2 == 0:
+                claude_message = claude(current_context, system_message_c3)
+                conversation_history.append(f"Oracle Claude3 said: {claude_message}\n")
+            else:
+                openai_message = gpt4o(current_context, system_message_oi, openai_api_key)
+                conversation_history.append(f"Oracle OpenAI responded: {openai_message}\n")
 
-    full_conversation = "\n".join(conversation_history)
-    final_response = gpt4o(f"Summarize the conversation and conclude with a final answer to the problem under 100 words:\n{full_conversation}", system_message5, openai_api_key)
-    return answers, final_response
+        full_conversation = "\n".join(conversation_history)
+        final_response = gpt4o(f"Summarize the conversation and conclude with a final answer to the problem under 100 words:\n{full_conversation}", system_message5, openai_api_key)
+        
+        king_content_text = f"**:orange[The King's answer:]**\n\n{final_response}"
+        st.session_state.messages.append({"role": "assistant", "content": king_content_text})
+        st.chat_message("assistant", avatar=model_avatars["King"]).write(king_content_text)
+
+        return answers, final_response
 
 # Streamlit UI
 st.title("💬 Choose Your AI Architecture")
@@ -170,41 +237,23 @@ architecture_choice = st.selectbox("Choose the architecture", ["King", "Duopoly"
 # Step 2: Initialize messages in session state if not already present
 st.session_state.setdefault("messages", [{"role": "assistant", "content": "How can I help you?"}])
 
-# Step 3: Define custom avatars for each model
-model_avatars = {
-    "Llama3": "🦙",
-    "MistralAI": "🌬️",
-    "Gemini": "♊",
-    "Claude": "🧠",
-    "assistant": ":material/smart_toy:",
-    "user": ":material/person:",
-    "King": "👑" 
-}
-
-default_avatar = ":material/person:"
-
 # Step 4: Display existing messages with appropriate avatars
 for msg in st.session_state.messages:
-    avatar = model_avatars.get(msg["role"], default_avatar)
-    st.chat_message(msg["role"], avatar=avatar).write(msg["content"])
+    # The avatar is now managed directly in the 'the_king' and 'duopoly' functions.
+    st.chat_message(msg["role"]).write(msg["content"])
 
 # Step 5: Input new prompt and display it
 if prompt := st.chat_input("Enter your prompt:"):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user", avatar=model_avatars["user"]).write(prompt)
+    st.chat_message("user").write(prompt)
 
     # Step 6: Process the prompt based on chosen architecture
-    with st.spinner(f"The {architecture_choice} is gathering advice from advisors..."):
-        if architecture_choice == "King":
-            model_answers, final_answer = the_king(prompt, openai_api_key)
-        elif architecture_choice == "Duopoly":
-            model_answers, final_answer = duopoly(prompt, openai_api_key)
+    if architecture_choice == "King":
+        model_answers, final_answer = the_king(prompt, openai_api_key)
+    elif architecture_choice == "Duopoly":
+        model_answers, final_answer = duopoly(prompt, openai_api_key)
 
-    # Display each model's advice
+    # Display each model's advice and the final answer from the chosen architecture
     for model_name, answer in model_answers.items():
         st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice: {answer}"})
-        st.chat_message("assistant", avatar=model_avatars.get(model_name, default_avatar)).write(f"{model_name}'s advice: {answer}")
-
-    # Display the final answer from the chosen architecture
-    st.session_state.messages.append({"role": "assistant", "content": f"The {architecture_choice}'s answer: {final_answer}"})
-    st.chat_message("assistant", avatar=model_avatars["King"]).write(f"The {architecture_choice}'s answer: {final_answer}")
+        st.chat_message("assistant").write(f"{model_name}'s advice: {answer}")
