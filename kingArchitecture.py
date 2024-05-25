@@ -148,6 +148,10 @@ def theKing(prompt, openai_api_key):
 
     return answers, king_answer
 
+def clear_chat():
+    """Clears the chat history."""
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
 # Streamlit UI
 st.title("💬 King Architecture")
 st.caption("🚀 A Streamlit chatbot powered by multiple AI models")
@@ -167,3 +171,5 @@ if prompt := st.chat_input("Enter your prompt:"):
     king_content_text = f"**:orange[The King's answer:]**\n\n{king_answer}"
     st.session_state.messages.append({"role": "assistant", "content": king_content_text})
     st.chat_message("assistant").write(king_content_text)
+
+st.button("Clear Chat", on_click=clear_chat)
