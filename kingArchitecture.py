@@ -227,6 +227,10 @@ def duopoly(prompt, openai_api_key):
 
         return answers, final_response
 
+def clear_chat():
+    """Clears the chat history."""
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
 # Streamlit UI
 st.title("💬 Choose Your AI Architecture")
 st.caption("🚀 A Streamlit chatbot powered by multiple AI models")
@@ -257,3 +261,5 @@ if prompt := st.chat_input("Enter your prompt:"):
     for model_name, answer in model_answers.items():
         st.session_state.messages.append({"role": "assistant", "content": f"{model_name}'s advice: {answer}"})
         st.chat_message("assistant").write(f"{model_name}'s advice: {answer}")
+
+st.button("Clear Chat", on_click=clear_chat)
